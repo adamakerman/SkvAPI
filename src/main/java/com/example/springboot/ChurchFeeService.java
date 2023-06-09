@@ -3,41 +3,37 @@ package com.example.springboot;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ChurchFeeService {
 
-    public double getMeanChurchFeeOfAllPaymentsInCountyForYears(int startYear, int endYear, String county){
-        var paymentList = getPaymentData(startYear, endYear, county);
-
+    public double getMeanChurchFeeOfAllPaymentsInCountyForYears(int startYear, int toYear, String county) throws RequestException {
+        var paymentList = getPaymentData(startYear, toYear, county);
         return getMeanChurchFee(paymentList);
     }
 
-
-    private ArrayList<SkvApiResponse.YearlyPayment> getPaymentData(int startYear, int endYear, String county){
-
+    private ArrayList<SkvApiResponse.YearlyPayment> getPaymentData(int startYear, int toYear, String county) throws RequestException{
         final String apiUri = "https://skatteverket.entryscape.net/rowstore/dataset/c67b320b-ffee-4876-b073-dd9236cd2a99";
-
         String url = UriComponentsBuilder.fromUriString(apiUri)
                 .queryParam("kommun", county)
-                /* TODO önskade att göra typ ".queryParam("år", URLencode(yearRangeToRegex(startyear, endyear)) */
+                .queryParam("år", getYearRangeRegex(startYear, toYear))
                 .build()
                 .toUriString();
 
         RestTemplate restTemplate = new RestTemplate();
-
         SkvApiResponse result = restTemplate.getForObject(url, SkvApiResponse.class);
-        /* TODO Skapa exception handlers */
-        assert result != null;
+        if (result == null){
+            throw new RequestException("No response from API");
+        }
         var payments = result.getPayments();
 
-        /* TODO Filtrerar ut felaktiga årtal (pga dålig request query) */
-        payments.removeIf(p -> isIllegalYear(p.getYear(), startYear, endYear));
-
+        /* TODO Bör hantera detta annorlunda (status 500 internal error känns ej rätt)
+        *   men vill även säkerställa att den inte börjar beräkna medelvärde av 0 betalningar...*/
+        if (payments.size() == 0){
+            throw new RequestException("No data found in county for this time span");
+        }
         return payments;
     }
 
@@ -48,18 +44,14 @@ public class ChurchFeeService {
             total += payment.getChurchFee();
             nPayments++;
         }
-
+        if (nPayments == 0){
+            return 0;
+        }
         return total / nPayments;
     }
 
-    private boolean isIllegalYear(int inputYear, int startYear, int endYear){
-
-        return inputYear < startYear | inputYear > endYear;
-    }
-
-    /* Får tyvärr inte regex att funka i requesten... Även om den är korrekt URL-encodad :( */
     private static String getYearRangeRegex(int fromYear, int toYear) {
-        StringBuilder regex = new StringBuilder("\\b(");
+        StringBuilder regex = new StringBuilder("\b(");
 
         for (int i = fromYear; i <= toYear; i++) {
             if (i != fromYear) {
@@ -68,7 +60,7 @@ public class ChurchFeeService {
             regex.append(i);
         }
 
-        regex.append(")\\b");
+        regex.append(")\b");
         return regex.toString();
     }
 }
