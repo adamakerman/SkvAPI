@@ -4,8 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.UnsupportedEncodingException;
 
 @RestController
 public class ChurchController {
@@ -17,7 +20,7 @@ public class ChurchController {
                 @RequestParam int fromYear,
                 @RequestParam int toYear) throws RequestException, JsonProcessingException {
 
-        double meanFee = churchFeeService.getMeanChurchFeeOfAllPaymentsInCountyForYears(fromYear, toYear, county.toUpperCase());
+        double meanFee = churchFeeService.getMeanChurchFeeOfAllPaymentsInCountyForYears(fromYear, toYear, county);
         var response = new ResponseClass(fromYear, toYear, county, meanFee);
 
         var om = new ObjectMapper();

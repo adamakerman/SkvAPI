@@ -3,6 +3,9 @@ package com.example.springboot;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,10 +17,10 @@ public class ChurchFeeService {
         return getMeanChurchFee(paymentList);
     }
 
-    private ArrayList<SkvApiResponse.YearlyPayment> getPaymentData(int startYear, int toYear, String county) throws RequestException{
+    private ArrayList<SkvApiResponse.YearlyPayment> getPaymentData(int startYear, int toYear, String county) throws RequestException {
         final String apiUri = "https://skatteverket.entryscape.net/rowstore/dataset/c67b320b-ffee-4876-b073-dd9236cd2a99";
         String url = UriComponentsBuilder.fromUriString(apiUri)
-                .queryParam("kommun", county)
+                .queryParam("kommun", county.toUpperCase())
                 .queryParam("år", getYearRangeRegex(startYear, toYear))
                 .build()
                 .toUriString();
